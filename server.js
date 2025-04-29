@@ -8,7 +8,9 @@ const app = express()
 
 const port = process.env.PORT
 
-app.use(cors())
+app.use(cors({
+  origin: '*',
+}))
 app.use(express.json())
 app.use(morgan('dev'))
 
