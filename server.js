@@ -57,23 +57,21 @@ app.post(`${fortigate}/register`, async (req, res, next) => {
     const rad = {
       checkAttribute: "Cleartext-Password",
       checkOp: ":=", // ค่าเปรียบเที่ยบ
-      replyAttribute: "Session-Timeout", // หมดเวลาการใช้งาน
-      replyOp: ":=", // ค่าเปรียบเที่ยบ
-      replyValue: "14400" // 4 ชั่วโมง
+      groupreplyGroupOfficer: "officer",
+      groupreplyGroupPatient: "patient",
+      groupreplyAttribute: "Session-Timeout", // หมดเวลาการใช้งาน
+      groupreplyPriorityOfficer: 1,
+      groupreplyPriorityPatient: 2
     };
 
     // รับค่าจาก request ที่ส่งเข้ามา
     const userData = req.body;
     // ตรวจสอบว่ามีการส่งข้อมูลมาจริงหรือไม่?
-    if(!userData) return res.status(400).json({ code: 400, status: "error", message: `กรุณากรอกข้อมูลให้ครบถ้วน!` });
+    if (!userData) return res.status(400).json({ code: 400, status: "error", message: `กรุณากรอกข้อมูลให้ครบถ้วน!` });
 
     // ตรวจสอบว่า Username ที่ส่งมาอยู่ในรูปแบบของเลขบัตรประจำตัวประชาชนหรือไม่?
     const checkUsernameInNationalId = await isThaiCitizenId(userData.username);
     if (!checkUsernameInNationalId) return res.status(400).json({ code: 400, status: "error", message: `${userData.username} ต้องเป็นเลขบัตรประจำตัวประชาชนเท่านั้น!` });
-
-    // ตรวจสอบว่า username ที่ส่งมามีข้อมูลอยู่ในระบบ BackOffice จริงหรือไม่ เพราะถ้าเป็นเจ้าหน้าที่ต้องมีข้อมูลใน BackOffice
-    const [rows] = await db_b.query('SELECT ID FROM hrd_person WHERE HR_CID = ? LIMIT 1', [userData.username]);
-    if (rows.length === 0) return res.status(400).json({ code: 400, status: "error", message: `ไม่สามารถ Register ได้เนื่องจากท่านไม่ใช่เจ้าหน้าที่ภายในโรงพยาบาล!` });
 
     // ตรวจสอบว่ามี Username ซ้ำหรือไม่ในระบบ
     const checkUniqueUsername = await prisma.radcheck.findFirst({ where: { username: userData.username }, select: { id: true } });
@@ -97,22 +95,36 @@ app.post(`${fortigate}/register`, async (req, res, next) => {
     // บันทึกข้อมูลด้วย payload ที่เตรียมไว้ไปยัง Database
     const createDataRadcheck = await prisma.radcheck.create({ data: { ...radcheckPayload } });
     if (createDataRadcheck) {
-      // สร้าง Payload ของ radreply เพื่อเตรียมบันทึกข้อมูล
-      const radreplyPayload = {
-        username: userData.username,
-        attribute: rad.replyAttribute,
-        op: rad.replyOp,
-        value: rad.replyValue
-      }
+      // ตรวจสอบว่า username ที่ส่งมามีข้อมูลอยู่ในระบบ BackOffice จริงหรือไม่ เพราะถ้าเป็นเจ้าหน้าที่ต้องมีข้อมูลใน BackOffice
+      const [rows] = await db_b.query('SELECT ID FROM hrd_person WHERE HR_CID = ? LIMIT 1', [userData.username]);
+      if (rows.length === 0) {
+        // สร้าง Payload ของ radreply เพื่อเตรียมบันทึกข้อมูล
+        const radreplyPayload = {
+          username: userData.username,
+          groupname: rad.groupreplyGroupPatient,
+          priority: rad.groupreplyPriorityPatient
+        }
 
-      // บันทึกข้อมูลด้วย payload ที่เตรียมไว้ไปยัง Database
-      const createDataRadreply = await prisma.radreply.create({ data: { ...radreplyPayload } });
-      if (createDataRadreply) return res.status(200).json({
-        code: 200,
-        status: 'success',
-        message: 'Create user successfully!'
-      });
+        // บันทึกข้อมูลด้วย payload ที่เตรียมไว้ไปยัง Database
+        await prisma.radusergroup.create({ data: { ...radreplyPayload } });
+      } else {
+        // สร้าง Payload ของ radreply เพื่อเตรียมบันทึกข้อมูล
+        const radreplyPayload = {
+          username: userData.username,
+          groupname: rad.groupreplyGroupOfficer,
+          priority: rad.groupreplyPriorityOfficer
+        }
+
+        // บันทึกข้อมูลด้วย payload ที่เตรียมไว้ไปยัง Database
+        await prisma.radusergroup.create({ data: { ...radreplyPayload } });
+      }
     }
+
+    return res.status(200).json({
+      code: 200,
+      status: 'success',
+      message: 'Create user successfully!'
+    });
   } catch (next) {
     console.log(next)
     return res.status(500).json({ code: 500, status: "internal server", message: "" });
