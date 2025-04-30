@@ -135,10 +135,10 @@ app.post(`${fortigate}/check`, async (req, res, next) => {
     const isMatch = await bcrypt.compare(password, checkUsername.value);
     if (!isMatch) return res.status(400).json({ code: 400, status: "error", message: "รหัสผ่านไม่ถูกต้องกรุณาตรวจสอบ!" });
 
-    res.json({ code: 200, status: "success", message: "ตรวจพบข้อมูล" });
+    res.json({ code: 200, status: "success", result: checkUsername.value });
   } catch (next) {
     console.log(next)
-    return res.status(500).json({ code: 500, status: "internal server", result: checkUsername.value });
+    return res.status(500).json({ code: 500, status: "internal server", message: "" });
   }
 });
 
