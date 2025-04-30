@@ -69,6 +69,9 @@ app.post(`${fortigate}/register`, async (req, res, next) => {
     // ตรวจสอบว่ามีการส่งข้อมูลมาจริงหรือไม่?
     if (!userData) return res.status(400).json({ code: 400, status: "error", message: `กรุณากรอกข้อมูลให้ครบถ้วน!` });
 
+    const [rows] = await db_b.query('SELECT ID FROM hrd_person WHERE HR_CID = ? LIMIT 1', [userData.username]);
+    if(rows.length === 0) return res.status(400).json({ code: 400, status: "error", message: `ไม่สามารถ Register ได้เนื่องจากท่านไม่ใช่เจ้าหน้าที่ภายในโรงพยาบาล!` });
+
     // ตรวจสอบว่า Username ที่ส่งมาอยู่ในรูปแบบของเลขบัตรประจำตัวประชาชนหรือไม่?
     const checkUsernameInNationalId = await isThaiCitizenId(userData.username);
     if (!checkUsernameInNationalId) return res.status(400).json({ code: 400, status: "error", message: `${userData.username} ต้องเป็นเลขบัตรประจำตัวประชาชนเท่านั้น!` });
