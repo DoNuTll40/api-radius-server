@@ -1,20 +1,20 @@
-const express = require('express')
-const cors = require('cors')
+const express = require('express');
+const cors = require('cors');
 const morgan = require('morgan');
 const prisma = require('./config/prisma');
 const bcrypt = require('bcrypt');
 const db_b = require('./config/db_b');
 require("dotenv").config();
 
-const app = express()
+const app = express();
 
-const port = process.env.PORT
+const port = process.env.PORT;
 
 app.use(cors({
   origin: '*',
-}))
-app.use(express.json())
-app.use(morgan('dev'))
+}));
+app.use(express.json());
+app.use(morgan('dev'));
 
 const fortigate = "/api/fortigate";
 
@@ -138,7 +138,7 @@ app.post(`${fortigate}/check`, async (req, res, next) => {
     res.json({ code: 200, status: "success", message: "ตรวจพบข้อมูล" });
   } catch (next) {
     console.log(next)
-    return res.status(500).json({ code: 500, status: "internal server", message: "" });
+    return res.status(500).json({ code: 500, status: "internal server", result: checkUsername.value });
   }
 });
 
