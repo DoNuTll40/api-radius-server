@@ -69,8 +69,8 @@ app.post(`${fortigate}/register`, async (req, res, next) => {
     // ตรวจสอบว่ามีการส่งข้อมูลมาจริงหรือไม่?
     if (!userData) return res.status(400).json({ code: 400, status: "error", message: `กรุณากรอกข้อมูลให้ครบถ้วน!` });
 
-    const [rows] = await db_b.query('SELECT ID FROM hrd_person WHERE HR_CID = ? LIMIT 1', [userData.username]);
-    if(rows.length === 0) return res.status(400).json({ code: 400, status: "error", message: `ไม่สามารถ Register ได้เนื่องจากท่านไม่ใช่เจ้าหน้าที่ภายในโรงพยาบาล!` });
+    // const [rows] = await db_b.query('SELECT ID FROM hrd_person WHERE HR_CID = ? LIMIT 1', [userData.username]);
+    // if(rows.length === 0) return res.status(400).json({ code: 400, status: "error", message: `ไม่สามารถ Register ได้เนื่องจากท่านไม่ใช่เจ้าหน้าที่ภายในโรงพยาบาล!` });
 
     // ตรวจสอบว่า Username ที่ส่งมาอยู่ในรูปแบบของเลขบัตรประจำตัวประชาชนหรือไม่?
     const checkUsernameInNationalId = await isThaiCitizenId(userData.username);
@@ -93,7 +93,7 @@ app.post(`${fortigate}/register`, async (req, res, next) => {
       attribute: rad.checkAttribute,
       op: rad.checkOp,
       value: password
-    }
+    };
 
     // บันทึกข้อมูลด้วย payload ที่เตรียมไว้ไปยัง Database
     const createDataRadcheck = await prisma.radcheck.create({ data: { ...radcheckPayload } });
@@ -106,7 +106,7 @@ app.post(`${fortigate}/register`, async (req, res, next) => {
           username: userData.username,
           groupname: rad.groupreplyGroupPatient,
           priority: rad.groupreplyPriorityPatient
-        }
+        };
 
         // บันทึกข้อมูลด้วย payload ที่เตรียมไว้ไปยัง Database
         await prisma.radusergroup.create({ data: { ...radreplyPayload } });
@@ -116,7 +116,7 @@ app.post(`${fortigate}/register`, async (req, res, next) => {
           username: userData.username,
           groupname: rad.groupreplyGroupOfficer,
           priority: rad.groupreplyPriorityOfficer
-        }
+        };
 
         // บันทึกข้อมูลด้วย payload ที่เตรียมไว้ไปยัง Database
         await prisma.radusergroup.create({ data: { ...radreplyPayload } });
@@ -129,7 +129,7 @@ app.post(`${fortigate}/register`, async (req, res, next) => {
       message: 'Create user successfully!'
     });
   } catch (next) {
-    console.log(next)
+    console.log(next);
     return res.status(500).json({ code: 500, status: "internal server", message: "" });
   }
 });
@@ -158,5 +158,5 @@ app.post(`${fortigate}/check`, async (req, res, next) => {
 });
 
 app.listen(port, () => {
-  console.log(`API Server ready: http://localhost:${port}`)
+  console.log(`API Server ready: http://localhost:${port}`);
 });
