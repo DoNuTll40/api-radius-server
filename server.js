@@ -4,6 +4,7 @@ const morgan = require('morgan');
 const prisma = require('./config/prisma');
 const bcrypt = require('bcrypt');
 const db_b = require('./config/db_b');
+const { default: rateLimit } = require('express-rate-limit');
 require("dotenv").config();
 
 const app = express();
@@ -15,6 +16,17 @@ app.use(cors({
 }));
 app.use(express.json());
 app.use(morgan('dev'));
+
+const loginLimiter = rateLimit({
+  windowMs: 1 * 60 * 1000, // 1 นาที
+  limit: 5,
+  message: {
+    status: 429,
+    message: 'พยายามเข้าสู่ระบบมากเกินไป กรุณาลองใหม่ภายหลัง',
+  },
+  standardHeaders: 'draft-8',
+  legacyHeaders: false,
+})
 
 const fortigate = "/api/fortigate";
 
@@ -135,7 +147,7 @@ app.post(`${fortigate}/register`, async (req, res, next) => {
 });
 
 // Check ข้อมูลก่อนทำการ Login
-app.post(`${fortigate}/check`, async (req, res, next) => {
+app.post(`${fortigate}/check`, loginLimiter, async (req, res, next) => {
   try {
     const { username, password } = req.body;
     if (!username || !password) return res.status(400).json({ code: 400, status: "error", message: "ไม่พบข้อมูล" });
