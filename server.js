@@ -6,6 +6,9 @@ const bcrypt = require('bcrypt');
 const db_b = require('./config/db_b');
 const { default: rateLimit } = require('express-rate-limit');
 require("dotenv").config();
+const schedule = require("node-schedule")
+const axios = require('axios')
+const moment = require('moment')
 
 const app = express();
 
@@ -167,7 +170,52 @@ app.post(`${fortigate}/check`, loginLimiter, async (req, res, next) => {
     console.log(next)
     return res.status(500).json({ code: 500, status: "internal server", message: "" });
   }
-});
+})
+
+const sendTelegramMessage = async (data) => {
+  const chatId = "-4899706950"
+  const botToken = "7311914937:AAE0NsaVaxBPVsYD-IYcgK8soNGP3VYT8n0"
+  const telegramApiUrl = `https://api.telegram.org/bot${botToken}/sendMessage`
+
+  let message = 'เจอสิ่งผิดปกติตรวจสอบด่วนๆ\n'
+  message += `ID: ${data.id}\n`
+  message += `Username: ${data.username}\n`
+  message += `Pass: ${data.pass}\n`
+  message += `Reply: ${data.reply}\n`
+  message += `Date & Time: ${moment(data.authdate).format('YYYY-MM-DD HH:mm:ss')}\n`
+
+  try {
+    await axios.post(telegramApiUrl, {
+      chat_id: chatId, // Chat ID ของผู้ใช้
+      text: message,
+    })
+  } catch (error) {
+    console.error("Error sending Telegram message:", error.message)
+    throw new Error(error.message)
+  }
+}
+
+async function checkHacker() {
+  const dateNow = new Date()
+  const res = await prisma.radpostauth.findFirst({
+    where: { username: 'stella', authdate: { gt: dateNow } },
+    orderBy: { id: 'desc' }
+  })
+
+  if (res) {
+    await sendTelegramMessage(res)
+  } else {
+    return
+  }
+}
+
+function startScheduler() {
+  checkHacker()
+
+  schedule.scheduleJob('* * * * *', async () => { await checkHacker() })
+}
+
+startScheduler()
 
 app.listen(port, () => {
   console.log(`API Server ready: http://localhost:${port}`);
