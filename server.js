@@ -173,8 +173,8 @@ app.post(`${fortigate}/check`, loginLimiter, async (req, res, next) => {
 })
 
 const sendTelegramMessage = async (data) => {
-  const chatId = "-4899706950"
-  const botToken = "7311914937:AAE0NsaVaxBPVsYD-IYcgK8soNGP3VYT8n0"
+  const chatId = "{chatid}"
+  const botToken = "{token telegram id}"
   const telegramApiUrl = `https://api.telegram.org/bot${botToken}/sendMessage`
 
   let message = 'เจอสิ่งผิดปกติตรวจสอบด่วนๆ\n'
